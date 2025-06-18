@@ -73,4 +73,36 @@ export const aIModels: AIModel[] = [
     features: ['Vision', 'Search', 'PDFs'],
     providerColor: 'blue',
   },
-]; 
+];
+
+// Local storage key for enabled models
+const ENABLED_MODELS_KEY = 'enabledModels';
+
+// Get enabled models from localStorage (all models enabled by default)
+export function getEnabledModels(): string[] {
+  if (typeof window === 'undefined') return aIModels.map(m => m.id);
+  
+  const stored = localStorage.getItem(ENABLED_MODELS_KEY);
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch (e) {
+      // If parsing fails, return all models as default
+      return aIModels.map(m => m.id);
+    }
+  }
+  // Default: all models enabled
+  return aIModels.map(m => m.id);
+}
+
+// Set enabled models in localStorage
+export function setEnabledModels(modelIds: string[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(ENABLED_MODELS_KEY, JSON.stringify(modelIds));
+}
+
+// Get filtered models based on enabled status
+export function getFilteredModels(): AIModel[] {
+  const enabledIds = getEnabledModels();
+  return aIModels.filter(model => enabledIds.includes(model.id));
+} 

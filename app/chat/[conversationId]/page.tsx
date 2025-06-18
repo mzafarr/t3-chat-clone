@@ -16,6 +16,7 @@ interface ChatPageProps {
 
 export default function ChatPage({ params }: ChatPageProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [isSidebarMinimized, setIsSidebarMinimized] = useState(false)
   const router = useRouter()
   const activeThreadId = params.conversationId
   
@@ -57,6 +58,8 @@ export default function ChatPage({ params }: ChatPageProps) {
       <ChatSidebar
         activeThreadId={activeThreadId}
         onThreadSelect={(threadId: string) => router.push(`/chat/${threadId}`)}
+        isMinimized={isSidebarMinimized}
+        onToggleMinimize={setIsSidebarMinimized}
       />
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden">

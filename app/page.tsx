@@ -1,38 +1,38 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useQuery } from "convex/react"
-import { useRouter } from "next/navigation"
-import { api } from "../convex/_generated/api"
-import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
-import { DashboardTabs } from "@/components/dashboard/dashboard-tabs"
-import { ModelsTab } from "@/components/dashboard/tabs/models-tab"
-import { AccountTab } from "@/components/dashboard/tabs/account-tab"
-import { ContactTab } from "@/components/dashboard/tabs/contact-tab"
-import { 
-  CustomizationTab, 
-  HistoryTab, 
-  ApiKeysTab, 
-  AttachmentsTab 
-} from "@/components/dashboard/tabs/other-tabs"
-import { CustomPromptInput } from "@/components/custom-prompt-input"
+import { useState, useEffect } from "react";
+import { useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
+import { api } from "../convex/_generated/api";
+import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
+import { ModelsTab } from "@/components/dashboard/tabs/models-tab";
+import { AccountTab } from "@/components/dashboard/tabs/account-tab";
+import { ContactTab } from "@/components/dashboard/tabs/contact-tab";
+import {
+  CustomizationTab,
+  HistoryTab,
+  ApiKeysTab,
+  AttachmentsTab,
+} from "@/components/dashboard/tabs/other-tabs";
+import { CustomPromptInput } from "@/components/custom-prompt-input";
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState("models")
-  const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash")
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  
+  const [activeTab, setActiveTab] = useState("models");
+  const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
   // Check authentication status
-  const user = useQuery(api.auth.loggedInUser)
+  const user = useQuery(api.auth.loggedInUser);
 
   useEffect(() => {
     // If the query has finished loading and there's no user, redirect to sign-in
     if (user === null) {
-      router.push("/sign-in")
+      router.push("/sign-in");
     }
-  }, [user, router])
+  }, [user, router]);
 
   // Show loading while checking authentication
   if (user === undefined) {
@@ -43,43 +43,43 @@ export default function DashboardPage() {
           <p className="mt-2 text-muted-foreground">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   // If user is null, we're redirecting to sign-in (handled in useEffect)
   if (user === null) {
-    return null
+    return null;
   }
 
   const handleSendMessage = (message: string, files?: File[]) => {
-    setIsLoading(true)
-    console.log("Sending message:", message, "with files:", files)
+    setIsLoading(true);
+    console.log("Sending message:", message, "with files:", files);
     // Simulate API call
     setTimeout(() => {
-      setIsLoading(false)
-    }, 2000)
-  }
+      setIsLoading(false);
+    }, 2000);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
       case "models":
-        return <ModelsTab />
+        return <ModelsTab />;
       case "customization":
-        return <CustomizationTab />
+        return <CustomizationTab />;
       case "history":
-        return <HistoryTab />
+        return <HistoryTab />;
       case "account":
-        return <AccountTab />
+        return <AccountTab />;
       case "contact":
-        return <ContactTab />
+        return <ContactTab />;
       case "attachments":
-        return <AttachmentsTab />
+        return <AttachmentsTab />;
       case "api-keys":
-        return <ApiKeysTab />
+        return <ApiKeysTab />;
       default:
-        return <ModelsTab />
+        return <ModelsTab />;
     }
-  }
+  };
 
   return (
     <div className="flex h-screen bg-white dark:bg-gray-900">
@@ -90,20 +90,7 @@ export default function DashboardPage() {
         <div className="flex-1 overflow-auto bg-white dark:bg-gray-900">
           {renderContent()}
         </div>
-        
-        {/* Demo of the custom prompt input */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-800">
-          <div className="max-w-4xl mx-auto">
-            <CustomPromptInput
-              onSend={handleSendMessage}
-              isLoading={isLoading}
-              placeholder="Try the new custom prompt input..."
-              selectedModel={selectedModel}
-              onModelSelect={setSelectedModel}
-            />
-          </div>
-        </div>
       </div>
     </div>
-  )
+  );
 }

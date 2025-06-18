@@ -104,6 +104,61 @@ export const getConversation = query({
   },
 });
 
+export const updateConversationNamePublic = mutation({
+  args: { 
+    conversationId: v.id("conversations"),
+    name: v.string()
+  },
+  handler: async (ctx: MutationCtx, args: { conversationId: Id<"conversations">, name: string }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Must be logged in to update conversation name");
+    }
+
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) {
+      throw new Error("Conversation not found");
+    }
+
+    // Only allow renaming if the conversation belongs to the current user
+    if (conversation.userId !== userId) {
+      throw new Error("Not authorized to rename this conversation");
+    }
+
+    await ctx.db.patch(args.conversationId, {
+      name: args.name.trim(),
+    });
+    return null;
+  },
+});
+
+export const toggleConversationPin = mutation({
+  args: { 
+    conversationId: v.id("conversations")
+  },
+  handler: async (ctx: MutationCtx, args: { conversationId: Id<"conversations"> }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Must be logged in to pin conversation");
+    }
+
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) {
+      throw new Error("Conversation not found");
+    }
+
+    // Only allow pinning if the conversation belongs to the current user
+    if (conversation.userId !== userId) {
+      throw new Error("Not authorized to pin this conversation");
+    }
+
+    await ctx.db.patch(args.conversationId, {
+      pinned: !conversation.pinned,
+    });
+    return null;
+  },
+});
+
 // === Messages ===
 export const listMessages = query({
   args: { conversationId: v.id("conversations") },

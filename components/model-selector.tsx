@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ChevronDown, Search, Eye, FileText, Brain, Zap, Sparkles, Grid3X3, List } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/compon
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { aIModels, AIModel } from "@/lib/model-config"
+import { getFilteredModels, AIModel } from "@/lib/model-config"
 
 const filterOptions = [
   { id: "fast", label: "Fast", icon: Zap },
@@ -30,10 +30,48 @@ export function ModelSelector({ selectedModel, onModelSelect }: ModelSelectorPro
   const [selectedFilters, setSelectedFilters] = useState<string[]>([])
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid")
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [availableModels, setAvailableModels] = useState<AIModel[]>([])
 
-  const selectedModelData = aIModels.find((m) => m.id === selectedModel)
+  // Update available models when component mounts and when localStorage changes
+  useEffect(() => {
+    const updateModels = () => {
+      setAvailableModels(getFilteredModels())
+    }
+    
+    updateModels()
+    
+    // Listen for storage changes to update when models are enabled/disabled
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'enabledModels') {
+        updateModels()
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
 
-  const filteredModels = aIModels.filter((model) => {
+  // Also update when the dropdown opens to catch any changes
+  useEffect(() => {
+    if (isOpen) {
+      setAvailableModels(getFilteredModels())
+    }
+  }, [isOpen])
+
+  // Reset modal state when closed
+  useEffect(() => {
+    if (!showUpgradeModal) {
+      // Small delay to ensure modal cleanup
+      const timer = setTimeout(() => {
+        document.body.style.pointerEvents = ''
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [showUpgradeModal])
+
+  const selectedModelData = availableModels.find((m) => m.id === selectedModel)
+
+  const filteredModels = availableModels.filter((model) => {
     const matchesSearch = model.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesFilters =
       selectedFilters.length === 0 ||
@@ -47,8 +85,9 @@ export function ModelSelector({ selectedModel, onModelSelect }: ModelSelectorPro
   const otherModels = filteredModels.filter((m) => m.isPro)
 
   const handleModelSelect = (modelId: string) => {
-    const model = aIModels.find((m) => m.id === modelId)
+    const model = availableModels.find((m) => m.id === modelId)
     if (model?.isPro) {
+      setIsOpen(false) // Close the dropdown first
       setShowUpgradeModal(true)
       return
     }
@@ -211,7 +250,7 @@ export function ModelSelector({ selectedModel, onModelSelect }: ModelSelectorPro
                   ? (selectedModelData.isPro ? 'bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600' : 'bg-gradient-to-br from-blue-500 to-purple-500')
                   : 'bg-gray-500'
               }`}>
-                <selectedModelData.icon className="w-3 h-3" />
+                <selectedModelData.icon className="w-2 h-2" />
               </div>
             )}
             <span className="font-medium">{selectedModelData?.name || "Select Model"}</span>
@@ -258,9 +297,9 @@ export function ModelSelector({ selectedModel, onModelSelect }: ModelSelectorPro
                     variant={selectedFilters.includes(filter.id) ? "default" : "outline"}
                     size="sm"
                     onClick={() => toggleFilter(filter.id)}
-                    className="gap-1"
+                    className="gap-1 text-xs font-normal"
                   >
-                    <Icon className="w-3 h-3" />
+                    <Icon className="w-2 h-2" />
                     {filter.label}
                   </Button>
                 )
@@ -292,7 +331,7 @@ export function ModelSelector({ selectedModel, onModelSelect }: ModelSelectorPro
           </div>
 
           {/* Models */}
-          <div className="max-h-96 overflow-y-auto px-4 pb-4 space-y-4">
+          <div className="max-h-[calc(80vh-220px)] overflow-y-scroll px-4 pt-4 pb-28 space-y-4">
             {/* Favorites */}
             {favoriteModels.length > 0 && (
               <div>
@@ -321,13 +360,18 @@ export function ModelSelector({ selectedModel, onModelSelect }: ModelSelectorPro
 
       {/* Upgrade Modal */}
       <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
-        <DialogContent className="sm:max-w-md z-50">
+        <DialogContent className="sm:max-w-md z-[9999]">
           <DialogHeader>
             <DialogTitle>Upgrade to Pro</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-muted-foreground">Get access to web search and more features with Pro</p>
-            <Button className="w-full bg-pink-600 hover:bg-pink-700">Upgrade Now - $8/month</Button>
+            <Button 
+              className="w-full bg-pink-600 hover:bg-pink-700"
+              onClick={() => setShowUpgradeModal(false)}
+            >
+              Upgrade Now - $8/month
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

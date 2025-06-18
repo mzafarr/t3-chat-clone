@@ -5,7 +5,7 @@ import { streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
-import { aIModels } from "./model-config";
+import { aIModels } from "./model_config";
 
 const http = httpRouter();
 auth.addHttpRoutes(http);
@@ -83,7 +83,7 @@ http.route({
       }
 
       // Find the model configuration from our single source of truth
-      const modelConfig = aIModels.find(m => m.id === modelId);
+      const modelConfig = aIModels.find((m: any) => m.id === modelId);
       if (!modelConfig) {
         console.log("❌ Invalid model selected:", modelId);
         return new Response("Invalid model selected", { status: 400, headers });

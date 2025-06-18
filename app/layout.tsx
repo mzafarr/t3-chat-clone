@@ -10,9 +10,8 @@ import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "T3.chat - AI Assistant",
+  title: "T3.chat Clone",
   description: "A modern AI chat interface with multiple themes and models",
-  generator: "v0.dev",
 };
 
 export default function RootLayout({

@@ -16,7 +16,7 @@ import type {
 import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
 import type * as http from "../http.js";
-import type * as model_config from "../model-config.js";
+import type * as model_config from "../model_config.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -30,7 +30,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   chat: typeof chat;
   http: typeof http;
-  "model-config": typeof model_config;
+  model_config: typeof model_config;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

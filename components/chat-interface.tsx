@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from "react"
-import { RotateCcw, Edit3, Copy, ChevronUp, ChevronDown } from "lucide-react"
+import { RotateCcw, Edit3, Copy, ChevronUp, ChevronDown, Check } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { Button } from "@/components/ui/button"
 import { CustomPromptInput } from "./custom-prompt-input"
@@ -11,6 +11,7 @@ import { useQuery } from "convex/react"
 import { api } from "../convex/_generated/api"
 import { useChat } from "@ai-sdk/react"
 import { useAuthToken } from "@convex-dev/auth/react"
+import { toast } from "@/components/ui/use-toast"
 
 interface ChatInterfaceProps {
   activeThreadId?: string
@@ -30,6 +31,7 @@ export function ChatInterface({ activeThreadId, onSendMessage, onThreadSelect, i
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [showScrollButtons, setShowScrollButtons] = useState(false)
   const [isAtBottom, setIsAtBottom] = useState(true)
+  const [copiedMessages, setCopiedMessages] = useState<Set<string>>(new Set())
 
   // Fetch user data for personalized greeting
   const user = useQuery(api.auth.loggedInUser)
@@ -136,6 +138,32 @@ export function ChatInterface({ activeThreadId, onSendMessage, onThreadSelect, i
       })
     } catch (error) {
       console.error("❌ Error sending suggested question:", error)
+    }
+  }
+
+  // Copy functionality
+  const handleCopy = async (text: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedMessages(prev => new Set(prev).add(messageId))
+      setTimeout(() => {
+        setCopiedMessages(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(messageId)
+          return newSet
+        })
+      }, 2000)
+      toast({
+        title: "Copied to clipboard",
+        duration: 2000,
+      })
+    } catch (error) {
+      console.error("Failed to copy text:", error)
+      toast({
+        title: "Failed to copy",
+        variant: "destructive",
+        duration: 2000,
+      })
     }
   }
 
@@ -260,16 +288,10 @@ export function ChatInterface({ activeThreadId, onSendMessage, onThreadSelect, i
                 key={message.id}
                 className={cn("group flex gap-4", message.role === "user" ? "justify-end" : "justify-start")}
               >
-                {message.role === "assistant" && (
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
-                    T3
-                  </div>
-                )}
-
                 <div className={cn("max-w-3xl space-y-2", message.role === "user" ? "text-right" : "text-left")}>
                   <div
                     className={cn(
-                      "inline-block p-4 rounded-lg",
+                      "inline-block p-4 py-2.5 rounded-lg",
                       message.role === "user"
                         ? "bg-primary text-primary-foreground"
                         : hasGradientBackground
@@ -303,8 +325,12 @@ export function ChatInterface({ activeThreadId, onSendMessage, onThreadSelect, i
                       <Button variant="ghost" size="sm">
                         <RotateCcw className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
-                        <Copy className="w-4 h-4" />
+                      <Button variant="ghost" size="sm" onClick={() => handleCopy(message.content, message.id)}>
+                        {copiedMessages.has(message.id) ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
                       </Button>
                     </div>
                   )}
@@ -314,18 +340,16 @@ export function ChatInterface({ activeThreadId, onSendMessage, onThreadSelect, i
                       <Button variant="ghost" size="sm">
                         <Edit3 className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
-                        <Copy className="w-4 h-4" />
+                      <Button variant="ghost" size="sm" onClick={() => handleCopy(message.content, message.id)}>
+                        {copiedMessages.has(message.id) ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
                       </Button>
                     </div>
                   )}
                 </div>
-
-                {message.role === "user" && (
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
-                    M
-                  </div>
-                )}
               </div>
             ))}
             {/* Auto-scroll target */}

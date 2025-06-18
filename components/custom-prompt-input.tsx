@@ -156,10 +156,10 @@ export function CustomPromptInput({
         </div>
       )}
 
-      {/* Unified Layout for all screen sizes */}
-      <div className="flex flex-col sm:flex-row sm:items-end gap-3 p-3">
-        {/* Left side controls */}
-        <div className="flex items-center gap-2 order-2 sm:order-1">
+      {/* Main Layout - use mobile-like structure for all screen sizes */}
+      <div className="flex flex-col gap-3 p-3">
+        {/* Top controls row */}
+        <div className="flex items-center gap-2">
           {/* File Upload Button */}
           <button
             type="button"
@@ -185,8 +185,8 @@ export function CustomPromptInput({
           {/* Model Selector */}
           <ModelSelector selectedModel={selectedModel} onModelSelect={onModelSelect} />
 
-          {/* Send Button on mobile */}
-          <div className="ml-auto sm:hidden">
+          {/* Send Button */}
+          <div className="ml-auto">
             <Button
               type="submit"
               variant="default"
@@ -204,7 +204,7 @@ export function CustomPromptInput({
         </div>
 
         {/* Input field */}
-        <div className="flex-1 order-1 sm:order-2">
+        <div className="w-full">
           <Textarea
             ref={textareaRef}
             value={currentInput}
@@ -216,23 +216,6 @@ export function CustomPromptInput({
             rows={1}
             style={{ height: 'auto' }}
           />
-        </div>
-
-        {/* Send Button on desktop */}
-        <div className="hidden sm:block order-3">
-          <Button
-            type="submit"
-            variant="default"
-            size="icon"
-            className={`h-10 w-10 rounded-xl transition-all duration-200 ${
-              hasContent
-                ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transform hover:scale-105"
-                : "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-            }`}
-            disabled={isLoading || !hasContent}
-          >
-            <ArrowUp className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </form>

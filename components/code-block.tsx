@@ -47,7 +47,7 @@ export function CodeBlock({ children, className, inline }: CodeBlockProps) {
           variant="ghost"
           size="sm"
           onClick={handleCopy}
-          className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
+          className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/90 hover:bg-background/95 border border-border/50 shadow-sm"
         >
           {copied ? (
             <Check className="h-4 w-4 text-green-500" />
@@ -64,11 +64,14 @@ export function CodeBlock({ children, className, inline }: CodeBlockProps) {
           margin: 0,
           borderRadius: "0.5rem",
           fontSize: "0.875rem",
+          background: theme === "dark" ? "#1e1e1e" : "#f8f8f8",
+          border: theme === "dark" ? "1px solid #333" : "1px solid #e5e7eb",
         }}
         codeTagProps={{
           style: {
             fontSize: "0.875rem",
             fontFamily: "ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace",
+            background: "transparent",
           }
         }}
       >
