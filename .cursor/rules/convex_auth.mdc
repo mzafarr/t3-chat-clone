@@ -1,0 +1,10 @@
+---
+description: whenever you want to check userId in convex function or convex http route
+globs: 
+alwaysApply: false
+---
+whenever you want to check userId in convex function or http route always use this method:
+
+import { convexAuth, getAuthUserId } from "@convex-dev/auth/server";
+
+const userId = await getAuthUserId(ctx);
