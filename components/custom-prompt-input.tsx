@@ -5,6 +5,7 @@ import { Paperclip, ArrowUp, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { ModelSelector } from "@/components/model-selector"
+import { AppConfig } from "@/lib/app-config"
 
 interface CustomPromptInputProps {
   input?: string
@@ -57,8 +58,8 @@ export function CustomPromptInput({
       console.log("Only image files are allowed")
       return
     }
-    if (file.size > 10 * 1024 * 1024) {
-      console.log("File too large (max 10MB)")
+    if (file.size > AppConfig.maxImageSize) {
+      console.log(`File too large (max ${AppConfig.maxImageSize / 1024 / 1024}MB)`)
       return
     }
     
@@ -99,17 +100,41 @@ export function CustomPromptInput({
   const internalHandleSubmit = (e?: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault()
     
+    // Check if we have content to send
+    if (!currentInput.trim() && files.length === 0) {
+      return
+    }
+    
     if (handleSubmit) {
-      // Use the useChat handleSubmit
-      handleSubmit(e)
-    } else {
-      // Fallback to onSend for backward compatibility
-      if (currentInput.trim() || files.length > 0) {
-        onSend(currentInput, files)
-        setLocalInput("")
+      // Use handleSubmit with experimental_attachments for proper AI SDK file handling
+      if (files.length > 0) {
+        // Create a proper FileList for experimental_attachments
+        const dt = new DataTransfer()
+        files.forEach(file => dt.items.add(file))
+        const fileList = dt.files
+        
+        console.log("📎 Sending with experimental_attachments:", {
+          fileCount: fileList.length,
+          files: Array.from(fileList).map(f => ({ name: f.name, size: f.size, type: f.type }))
+        })
+        
+        handleSubmit(e, {
+          experimental_attachments: fileList
+        })
+        
+        // Clear files after successful submission
         setFiles([])
         setFilePreviews({})
+      } else {
+        // Text-only submission
+        handleSubmit(e)
       }
+    } else {
+      // Fallback to onSend for backward compatibility
+      onSend(currentInput, files)
+      setLocalInput("")
+      setFiles([])
+      setFilePreviews({})
     }
   }
 
@@ -165,7 +190,7 @@ export function CustomPromptInput({
             type="button"
             onClick={() => uploadInputRef.current?.click()}
             className="flex h-10 w-10 text-gray-400 dark:text-gray-500 cursor-pointer items-center justify-center rounded-xl transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-sm"
-            disabled={isLoading}
+            disabled={isLoading || files.length >= AppConfig.maxImagesPerMessage}
           >
             <Paperclip className="h-4 w-4" />
             <input

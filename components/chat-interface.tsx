@@ -47,6 +47,7 @@ export function ChatInterface({ activeThreadId, onSendMessage, onThreadSelect, i
   console.log("🔗 Chat API URL:", chatApiUrl)
   console.log("🆔 Active Thread ID:", activeThreadId)
   console.log("📨 Initial Messages:", initialMessages)
+  console.log("📨 Initial Messages (detailed):", JSON.stringify(initialMessages, null, 2))
 
   const token = useAuthToken();
   
@@ -54,16 +55,40 @@ export function ChatInterface({ activeThreadId, onSendMessage, onThreadSelect, i
     api: chatApiUrl,
     headers: {
       Authorization: `Bearer ${token}`,
+      'x-conversation-id': activeThreadId || '', // Pass conversation ID in header
     },
     id: activeThreadId,
     body: {
-      modelId: selectedModel // Pass the ID of the currently selected model
+      modelId: selectedModel, // Pass the ID of the currently selected model
+      id: activeThreadId // Also pass in body for redundancy
     },
-    initialMessages: initialMessages?.map(msg => ({
-      id: msg._id,
-      role: msg.author === "user" ? "user" as const : "assistant" as const,
-      content: msg.text || ""
-    })) || [],
+    initialMessages: initialMessages?.map(msg => {
+      // Create multimodal content if there's an image
+      if (msg.imageUrl && msg.text) {
+        return {
+          id: msg._id,
+          role: msg.author === "user" ? "user" as const : "assistant" as const,
+          content: [
+            { type: 'text', text: msg.text },
+            { type: 'image', image: msg.imageUrl }
+          ] as any
+        }
+      } else if (msg.imageUrl) {
+        return {
+          id: msg._id,
+          role: msg.author === "user" ? "user" as const : "assistant" as const,
+          content: [
+            { type: 'image', image: msg.imageUrl }
+          ] as any
+        }
+      } else {
+        return {
+          id: msg._id,
+          role: msg.author === "user" ? "user" as const : "assistant" as const,
+          content: msg.text || ""
+        }
+      }
+    }) as any || [],
     onError: (error) => {
       console.error("❌ useChat Error:", error)
     },
@@ -76,19 +101,42 @@ export function ChatInterface({ activeThreadId, onSendMessage, onThreadSelect, i
   })
 
   console.log("💬 Current Messages:", messages)
+  console.log("💬 Current Messages (detailed):", JSON.stringify(messages, null, 2))
   console.log("📋 Chat Status:", status)
   console.log("⚠️ Chat Error:", error)
 
   // Update messages when initial messages load
   useEffect(() => {
     if (initialMessages && initialMessages.length > 0) {
-      const formattedMessages = initialMessages.map(msg => ({
-        id: msg._id,
-        role: msg.author === "user" ? "user" as const : "assistant" as const,
-        content: msg.text || ""
-      }))
+      const formattedMessages = initialMessages.map(msg => {
+        // Create multimodal content if there's an image
+        if (msg.imageUrl && msg.text) {
+          return {
+            id: msg._id,
+            role: msg.author === "user" ? "user" as const : "assistant" as const,
+            content: [
+              { type: 'text', text: msg.text },
+              { type: 'image', image: msg.imageUrl }
+            ] as any
+          }
+        } else if (msg.imageUrl) {
+          return {
+            id: msg._id,
+            role: msg.author === "user" ? "user" as const : "assistant" as const,
+            content: [
+              { type: 'image', image: msg.imageUrl }
+            ] as any
+          }
+        } else {
+          return {
+            id: msg._id,
+            role: msg.author === "user" ? "user" as const : "assistant" as const,
+            content: msg.text || ""
+          }
+        }
+      })
       console.log("🔄 Setting initial messages:", formattedMessages)
-      setMessages(formattedMessages)
+      setMessages(formattedMessages as any)
     }
   }, [initialMessages, setMessages])
 
@@ -142,9 +190,21 @@ export function ChatInterface({ activeThreadId, onSendMessage, onThreadSelect, i
   }
 
   // Copy functionality
-  const handleCopy = async (text: string, messageId: string) => {
+  const handleCopy = async (content: string | any[], messageId: string) => {
     try {
-      await navigator.clipboard.writeText(text)
+      // Extract text content from multimodal or string content
+      let textToCopy = ''
+      if (typeof content === 'string') {
+        textToCopy = content
+      } else if (Array.isArray(content)) {
+        // Extract text parts from multimodal content
+        textToCopy = content
+          .filter(part => part.type === 'text')
+          .map(part => part.text)
+          .join(' ')
+      }
+      
+      await navigator.clipboard.writeText(textToCopy)
       setCopiedMessages(prev => new Set(prev).add(messageId))
       setTimeout(() => {
         setCopiedMessages(prev => {
@@ -182,6 +242,79 @@ export function ChatInterface({ activeThreadId, onSendMessage, onThreadSelect, i
   ]
 
   const hasGradientBackground = ["sunset", "ocean", "forest", "galaxy", "aurora"].includes(colorTheme)
+
+  // Helper function to render message content (handles both string and multimodal)
+  const renderMessageContent = (content: string | any[], role: string) => {
+    // Handle string content
+    if (typeof content === 'string') {
+      if (role === 'assistant') {
+        return (
+          <ReactMarkdown
+            components={{
+              code: ({ inline, className, children, ...props }: any) => (
+                <CodeBlock
+                  className={className}
+                  inline={inline}
+                  {...props}
+                >
+                  {String(children).replace(/\n$/, "")}
+                </CodeBlock>
+              ),
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+        )
+      } else {
+        return <p className="whitespace-pre-wrap">{content}</p>
+      }
+    }
+
+    // Handle multimodal content (array of parts)
+    if (Array.isArray(content)) {
+      return (
+        <div className="space-y-2">
+          {content.map((part, index) => {
+            if (part.type === 'text') {
+              return role === 'assistant' ? (
+                <ReactMarkdown
+                  key={index}
+                  components={{
+                    code: ({ inline, className, children, ...props }: any) => (
+                      <CodeBlock
+                        className={className}
+                        inline={inline}
+                        {...props}
+                      >
+                        {String(children).replace(/\n$/, "")}
+                      </CodeBlock>
+                    ),
+                  }}
+                >
+                  {part.text}
+                </ReactMarkdown>
+              ) : (
+                <p key={index} className="whitespace-pre-wrap">{part.text}</p>
+              )
+            } else if (part.type === 'image') {
+              return (
+                <img
+                  key={index}
+                  src={part.image}
+                  alt="Uploaded image"
+                  className="max-w-sm rounded-lg"
+                />
+              )
+            }
+            return null
+          })}
+        </div>
+      )
+    }
+
+    // Fallback for unexpected content types
+    return <p className="text-muted-foreground italic">Unable to display content</p>
+  }
 
   return (
     <div className={cn("flex-1 flex flex-col h-full overflow-hidden", hasGradientBackground && "relative")}>
@@ -299,26 +432,24 @@ export function ChatInterface({ activeThreadId, onSendMessage, onThreadSelect, i
                           : "bg-muted",
                     )}
                   >
-                    {message.role === "assistant" ? (
-                      <ReactMarkdown
-                        components={{
-                          code: ({ inline, className, children, ...props }: any) => (
-                            <CodeBlock
-                              className={className}
-                              inline={inline}
-                              {...props}
-                            >
-                              {String(children).replace(/\n$/, "")}
-                            </CodeBlock>
-                          ),
-                        }}
-                      >
-                        {message.content}
-                      </ReactMarkdown>
-                    ) : (
-                      <p className="whitespace-pre-wrap">{message.content}</p>
-                    )}
+                    {renderMessageContent(message.content, message.role)}
                   </div>
+                  
+                  {/* Render experimental_attachments images */}
+                  {message.experimental_attachments && message.experimental_attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {message.experimental_attachments
+                        .filter((attachment: any) => attachment?.contentType?.startsWith('image/'))
+                        .map((attachment: any, index: number) => (
+                          <img
+                            key={`${message.id}-attachment-${index}`}
+                            src={attachment.url}
+                            alt={attachment.name ?? `attachment-${index}`}
+                            className="max-w-xs rounded-lg shadow-md"
+                          />
+                        ))}
+                    </div>
+                  )}
 
                   {message.role === "assistant" && (
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

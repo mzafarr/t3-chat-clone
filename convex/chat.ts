@@ -431,6 +431,26 @@ export const getMessagesForOpenAI = internalQuery({
   },
 });
 
+export const saveUserMessage = internalMutation({
+  args: {
+    conversationId: v.id("conversations"),
+    text: v.string(),
+    imageId: v.optional(v.id("_storage")),
+  },
+  handler: async (ctx: MutationCtx, args: {
+    conversationId: Id<"conversations">,
+    text: string,
+    imageId?: Id<"_storage">,
+  }) => {
+    await ctx.db.insert("messages", {
+      conversationId: args.conversationId,
+      author: "user",
+      text: args.text,
+      imageId: args.imageId,
+    });
+  },
+});
+
 export const saveAssistantResponse = internalMutation({
   args: {
     conversationId: v.id("conversations"),

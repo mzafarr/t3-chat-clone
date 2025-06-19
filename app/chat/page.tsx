@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useQuery } from "convex/react"
+import { useQuery, useMutation } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { ChatSidebar } from "@/components/chat-sidebar"
 import { ChatInterface } from "@/components/chat-interface"
@@ -17,6 +17,7 @@ export default function ChatPage() {
   
   // Check authentication status
   const user = useQuery(api.auth.loggedInUser)
+  const createConversation = useMutation(api.chat.createConversation)
   
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -24,6 +25,25 @@ export default function ChatPage() {
       router.push("/sign-in")
     }
   }, [user, router])
+
+  // Auto-create a new conversation when user is authenticated
+  useEffect(() => {
+    const createNewConversation = async () => {
+      if (user && user._id) {
+        try {
+          const newConversationId = await createConversation({
+            name: "New Chat"
+          })
+          console.log("🆕 Created new conversation:", newConversationId)
+          router.push(`/chat/${newConversationId}`)
+        } catch (error) {
+          console.error("❌ Failed to create conversation:", error)
+        }
+      }
+    }
+
+    createNewConversation()
+  }, [user, createConversation, router])
   
   // Show loading while checking auth status
   if (user === undefined) {
